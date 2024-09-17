@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Graph</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        #graph {
+            width: 100vw;  /* Full viewport width */
+            height: 100vh; /* Full viewport height */
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="graph"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const circles = JSON.parse('{{ circles | safe }}'); // Ensure this line works correctly
+
+            function calculateDistance(c1, c2) {
+                const dx = c1.x - c2.x;
+                const dy = c1.y - c2.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            // Prepare data for Plotly
+            const nodes = circles.map((circle, index) => ({
+                x: circle.x,
+                y: circle.y,
+                r: circle.radius,
+                text: `Node ${index + 1}`
+            }));
+
+            console.log(nodes);
+
+            const edges = [];
+            for (let i = 0; i < circles.length - 1; i++) {
+                for (let j = i + 1; j < circles.length; j++) {
+                    const distance = calculateDistance(circles[i], circles[j]);
+                    edges.push({
+                        source: i,
+                        target: j,
+                        distance: distance.toFixed(2)
+                    });
+                }
+            }
+
+            const xMin = Math.min(...nodes.map(node => node.x));
+            const xMax = Math.max(...nodes.map(node => node.x));
+            const yMin = Math.min(...nodes.map(node => node.y));
+            const yMax = Math.max(...nodes.map(node => node.y));
+
+            const edgeX = [];
+            const edgeY = [];
+            edges.forEach(edge => {
+                edgeX.push(circles[edge.source].x, circles[edge.target].x);
+                edgeY.push(circles[edge.source].y, circles[edge.target].y);
+            });
+
+            if (edgeX[edgeX.length - 1] === null) {
+                edgeX.pop();
+                edgeY.pop();
+            }
+
+            const scaledEdgeX = edgeX.map(x => (x - xMin) / (xMax - xMin));
+            const scaledEdgeY = edgeY.map(y => (y - yMin) / (yMax - yMin));
+
+            const traceEdges = {
+                x: scaledEdgeX,
+                y: scaledEdgeY,
+                mode: 'lines',
+                line: { width: 1, color: 'grey' },
+                type: 'scatter'
+            };
+
+            const scaledX = nodes.map(node => (node.x - xMin) / (xMax - xMin));
+            const scaledY = nodes.map(node => (node.y - yMin) / (yMax - yMin));
+
+            const traceNodes = {
+                x: scaledX,
+                y: scaledY,
+                mode: 'markers+text',
+                text: nodes.map(node => node.text),
+                textposition: 'top center',
+                marker: {
+                    size: circles.map(circle => circle.radius),
+                    color: 'black'
+                },
+                type: 'scatter'
+            };
+
+            console.log(circles);
+            console.log(traceEdges);
+            console.log(traceNodes);
+
+            const layout = {
+                xaxis: { title: 'X Axis', range: [-0.5, 1.5] },
+                yaxis: { title: 'Y Axis', range: [-0.5, 1.5] },
+                title: 'TITLE HERE',
+                showlegend: false,
+                autosize: true // Ensure the layout resizes with the viewport
+            };
+
+            Plotly.newPlot('graph', [traceEdges, traceNodes], layout);
+        });
+    </script>
+</body>
+</html>

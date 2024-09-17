@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Circle Graph</title>
+    <style>
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #container {
+            position: relative;
+            height: 100vh; /* Full viewport height */
+            display: flex;
+            justify-content: center; /* Center the image horizontally */
+            align-items: center; /* Center the image vertically */
+            overflow: hidden; /* Ensure no overflow */
+        }
+        #background-image {
+            height: 100vh; /* Full viewport height */
+            aspect-ratio: 1/1;   /* Maintain aspect ratio */
+        }
+        }
+        #done-button {
+            position: relative;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+    <img id="background-image" src="/static/img.png" alt="Background" style="width: 100%;">
+    <canvas id="canvas"></canvas>
+</div>
+<button id="done-button">Done</button>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = document.getElementById('background-image');
+    const circles = [];
+    let isHolding = false;
+    let holdStartTime = 0;
+    let currentCircle = null;
+
+    img.onload = function() {
+        canvas.width = img.width;
+        canvas.height = img.height;
+    };
+
+    canvas.addEventListener('mousedown', function(e) {
+        isHolding = true;
+        holdStartTime = new Date().getTime();
+
+        const x = e.offsetX;
+        const y = e.offsetY;
+
+        currentCircle = {x, y, radius: 0};
+        circles.push(currentCircle);
+
+        expandCircle();
+    });
+
+    canvas.addEventListener('mouseup', function(e) {
+        isHolding = false;
+        holdStartTime = 0;
+        currentCircle = null;
+    });
+
+    function expandCircle() {
+        if (!isHolding) return;
+
+        const holdDuration = new Date().getTime() - holdStartTime;
+        currentCircle.radius = holdDuration / 10;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        circles.forEach(circle => {
+            ctx.beginPath();
+            ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fill();
+        });
+
+        requestAnimationFrame(expandCircle);
+    }
+
+    document.getElementById('done-button').addEventListener('click', function() {
+        fetch('/process_circles/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({circles})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log(data);
+                window.location.href = '/show_graph/';
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+</script>
+</body>
+</html>
+

@@ -1,0 +1,24 @@
+version: "3.11"
+
+services:
+  server:
+    build: server
+    container_name: server
+    ports:
+      - "5000:5000"
+    networks:
+      - ClimbingProject
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+#  process:
+#    build: process
+#    container_name: process
+#    ports:
+#      - "8000:8000"
+#    networks:
+#      - ClimbingProject
+
+networks:
+  ClimbingProject:
+    driver: bridge
